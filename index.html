@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coumponent - Sistem Pelaporan Laravel</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2535;
+    --border: #2a3147;
+    --text: #e2e8f5;
+    --muted: #8892a4;
+    --accent: #4f8ef7;
+    --accent2: #7c6af7;
+    --green: #3dd68c;
+    --amber: #f5a623;
+    --red: #f56565;
+    --teal: #38d9a9;
+    --pink: #f472b6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    min-height: 100vh;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0;
+    overflow-y: auto;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    padding: 1.5rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-logo h1 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+
+  .sidebar-logo p {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .sidebar-section {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-section-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0 1.25rem 0.5rem;
+  }
+
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 1.25rem;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    border-left: 2px solid transparent;
+  }
+
+  .sidebar-link:hover {
+    color: var(--text);
+    background: var(--bg3);
+  }
+
+  .sidebar-link.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(79, 142, 247, 0.08);
+  }
+
+  .sidebar-link .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.5;
+    flex-shrink: 0;
+  }
+
+  /* Main */
+  .main {
+    margin-left: 260px;
+    flex: 1;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar-badge {
+    background: rgba(79, 142, 247, 0.15);
+    color: var(--accent);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    border: 1px solid rgba(79, 142, 247, 0.3);
+  }
+
+  .topbar-title {
+    font-size: 14px;
+    font-weight: 500;
+    flex: 1;
+  }
+
+  .content {
+    padding: 2rem;
+    max-width: 900px;
+  }
+
+  /* Sections */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title .tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .tag-controller { background: rgba(79, 142, 247, 0.15); color: var(--accent); border: 1px solid rgba(79,142,247,0.25); }
+  .tag-model { background: rgba(61, 214, 140, 0.12); color: var(--green); border: 1px solid rgba(61,214,140,0.25); }
+  .tag-migration { background: rgba(245, 166, 35, 0.12); color: var(--amber); border: 1px solid rgba(245,166,35,0.25); }
+  .tag-middleware { background: rgba(244, 114, 182, 0.12); color: var(--pink); border: 1px solid rgba(244,114,182,0.25); }
+  .tag-view { background: rgba(56, 217, 169, 0.12); color: var(--teal); border: 1px solid rgba(56,217,169,0.25); }
+  .tag-request { background: rgba(124, 106, 247, 0.15); color: var(--accent2); border: 1px solid rgba(124,106,247,0.25); }
+  .tag-seeder { background: rgba(245, 101, 101, 0.12); color: var(--red); border: 1px solid rgba(245,101,101,0.25); }
+
+  .card p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Code blocks */
+  pre {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 0.75rem 0;
+  }
+
+  .kw { color: #c792ea; }
+  .fn { color: #82aaff; }
+  .str { color: #c3e88d; }
+  .cm { color: #546e7a; font-style: italic; }
+  .num { color: #f78c6c; }
+  .var { color: #f07178; }
+  .cls { color: #ffcb6b; }
+  .prop { color: #80cbc4; }
+
+  /* Method table */
+  .method-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin-top: 0.75rem;
+  }
+
+  .method-table th {
+    text-align: left;
+    padding: 8px 12px;
+    background: var(--bg);
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .method-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .method-table tr:last-child td { border-bottom: none; }
+
+  .method-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .http-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .http-get { background: rgba(61,214,140,0.12); color: var(--green); }
+  .http-post { background: rgba(79,142,247,0.12); color: var(--accent); }
+  .http-put { background: rgba(245,166,35,0.12); color: var(--amber); }
+  .http-delete { background: rgba(245,101,101,0.12); color: var(--red); }
+
+  .route-path {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--teal);
+  }
+
+  /* Page header */
+  .page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-header h2 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+
+  .page-header p {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* Structure tree */
+  .tree {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    line-height: 1.9;
+    color: var(--muted);
+  }
+
+  .tree .dir { color: var(--accent); font-weight: 500; }
+  .tree .file-php { color: var(--green); }
+  .tree .file-blade { color: var(--teal); }
+  .tree .file-other { color: var(--muted); }
+
+  /* Overview stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 28px;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1.5rem 0;
+  }
+
+  /* Inline code */
+  code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--accent2);
+  }
+
+  /* Note box */
+  .note {
+    background: rgba(79,142,247,0.07);
+    border: 1px solid rgba(79,142,247,0.25);
+    border-radius: 8px;
+    padding: 0.875rem 1rem;
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0.75rem 0;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .note-icon {
+    color: var(--accent);
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .warn {
+    background: rgba(245,166,35,0.07);
+    border-color: rgba(245,166,35,0.3);
+  }
+
+  .warn .note-icon { color: var(--amber); }
+
+  /* Flow chart simple */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 0.75rem 0;
+  }
+
+  .flow-step {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .flow-arrow {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* Role badge */
+  .role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    margin: 2px;
+  }
+
+  .role-admin { background: rgba(245,101,101,0.12); color: var(--red); border: 1px solid rgba(245,101,101,0.25); }
+  .role-siswa { background: rgba(56,217,169,0.12); color: var(--teal); border: 1px solid rgba(56,217,169,0.25); }
+
+  h3 { font-size: 15px; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--text); }
+  h4 { font-size: 13px; font-weight: 500; margin: 1rem 0 0.4rem; color: var(--muted); }
+
+  ul.list { padding-left: 1.25rem; }
+  ul.list li { font-size: 13px; color: var(--muted); line-height: 1.8; }
+  ul.list li span { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h1>📋 UKK DOCS</h1>
+    <p>Sistem Pelaporan Laravel</p>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Umum</div>
+    <a class="sidebar-link active" onclick="showSection('overview')">
+      <span class="dot"></span> Overview Proyek
+    </a>
+    <a class="sidebar-link" onclick="showSection('struktur')">
+      <span class="dot"></span> Struktur Folder
+    </a>
+    <a class="sidebar-link" onclick="showSection('database')">
+      <span class="dot"></span> Database & Migrasi
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Controllers</div>
+    <a class="sidebar-link" onclick="showSection('laporan-ctrl')">
+      <span class="dot"></span> LaporanController
+    </a>
+    <a class="sidebar-link" onclick="showSection('kategori-ctrl')">
+      <span class="dot"></span> KategoriController
+    </a>
+    <a class="sidebar-link" onclick="showSection('tanggapan-ctrl')">
+      <span class="dot"></span> TanggapanController
+    </a>
+    <a class="sidebar-link" onclick="showSection('profile-ctrl')">
+      <span class="dot"></span> ProfileController
+    </a>
+    <a class="sidebar-link" onclick="showSection('auth-ctrl')">
+      <span class="dot"></span> Auth Controllers
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Models</div>
+    <a class="sidebar-link" onclick="showSection('models')">
+      <span class="dot"></span> Laporan, Kategori, User
+    </a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Lainnya</div>
+    <a class="sidebar-link" onclick="showSection('middleware')">
+      <span class="dot"></span> Middleware
+    </a>
+    <a class="sidebar-link" onclick="showSection('requests')">
+      <span class="dot"></span> Form Requests
+    </a>
+    <a class="sidebar-link" onclick="showSection('views')">
+      <span class="dot"></span> Views (Blade)
+    </a>
+    <a class="sidebar-link" onclick="showSection('routes')">
+      <span class="dot"></span> Routes
+    </a>
+  </div>
+</nav>
+
+<!-- Main -->
+<main class="main">
+  <div class="topbar">
+    <span class="topbar-title" id="topbar-title">Overview Proyek</span>
+    <span class="topbar-badge">Laravel 11</span>
+    <span class="topbar-badge">PHP 8.x</span>
+  </div>
+
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div class="section active" id="section-overview">
+      <div class="page-header">
+        <h2>Overview Proyek</h2>
+        <p>Aplikasi web Sistem Pelaporan berbasis Laravel dengan dua peran pengguna: Admin dan Siswa.</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-num" style="color: var(--accent);">4</span>
+          <span class="stat-label">Controllers</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" style="color: var(--green);">4</span>
+          <span class="stat-label">Models</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" style="color: var(--teal);">3</span>
+          <span class="stat-label">Migrations</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" style="color: var(--amber);">30+</span>
+          <span class="stat-label">View Files</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tentang Aplikasi</div>
+        <p>Aplikasi ini adalah sistem pelaporan sekolah (UKK) yang memungkinkan siswa membuat laporan, dan admin mengelola serta memberikan tanggapan atas laporan tersebut.</p>
+        <div class="divider"></div>
+        <h3>Peran Pengguna</h3>
+        <div style="margin-top: 0.5rem; display: flex; gap: 8px; flex-wrap: wrap;">
+          <span class="role-badge role-admin">🔐 Admin — Kelola laporan, kategori, berikan feedback</span>
+          <span class="role-badge role-siswa">📝 Siswa — Buat & lihat laporan sendiri</span>
+        </div>
+        <div class="divider"></div>
+        <h3>Stack Teknologi</h3>
+        <ul class="list" style="margin-top: 0.5rem;">
+          <li><span>Framework:</span> Laravel 11 (PHP 8.x)</li>
+          <li><span>Frontend:</span> Blade Templates + Tailwind CSS</li>
+          <li><span>Database:</span> MySQL</li>
+          <li><span>Auth:</span> Laravel Breeze (session-based)</li>
+          <li><span>Build:</span> Vite + PostCSS</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Alur Aplikasi</div>
+        <h4>Alur Siswa</h4>
+        <div class="flow">
+          <div class="flow-step">Login</div><div class="flow-arrow">→</div>
+          <div class="flow-step">Dashboard</div><div class="flow-arrow">→</div>
+          <div class="flow-step">Buat Laporan</div><div class="flow-arrow">→</div>
+          <div class="flow-step">Upload Foto</div><div class="flow-arrow">→</div>
+          <div class="flow-step">Lihat Status</div>
+        </div>
+        <h4>Alur Admin</h4>
+        <div class="flow">
+          <div class="flow-step">Login</div><div class="flow-arrow">→</div>
+          <div class="flow-step">Dashboard</div><div class="flow-arrow">→</div>
+          <div class="flow-step">Lihat Laporan</div><div class="flow-arrow">→</div>
+          <div class="flow-step">Berikan Feedback</div><div class="flow-arrow">→</div>
+          <div class="flow-step">Update Status</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STRUKTUR -->
+    <div class="section" id="section-struktur">
+      <div class="page-header">
+        <h2>Struktur Folder</h2>
+        <p>Organisasi file dan direktori pada proyek Laravel UKK ini.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">App Directory</div>
+        <pre class="tree"><span class="dir">app/</span>
+├── <span class="dir">Http/</span>
+│   ├── <span class="dir">Controllers/</span>
+│   │   ├── <span class="dir">Auth/</span>                   <span class="cm">← 7 controller autentikasi</span>
+│   │   ├── <span class="file-php">Controller.php</span>          <span class="cm">← Base controller</span>
+│   │   ├── <span class="file-php">KategoriController.php</span>  <span class="cm">← CRUD kategori (Admin)</span>
+│   │   ├── <span class="file-php">LaporanController.php</span>   <span class="cm">← CRUD laporan</span>
+│   │   ├── <span class="file-php">ProfileController.php</span>   <span class="cm">← Edit profil user</span>
+│   │   └── <span class="file-php">TanggapanController.php</span> <span class="cm">← Feedback admin</span>
+│   ├── <span class="dir">Middleware/</span>
+│   │   └── <span class="file-php">RoleMiddleware.php</span>      <span class="cm">← Cek role user</span>
+│   └── <span class="dir">Requests/</span>                   <span class="cm">← 8 Form Request classes</span>
+├── <span class="dir">Models/</span>
+│   ├── <span class="file-php">Kategori.php</span>
+│   ├── <span class="file-php">Laporan.php</span>
+│   ├── <span class="file-php">Tanggapan.php</span>
+│   └── <span class="file-php">User.php</span>
+├── <span class="dir">Policies/</span>                       <span class="cm">← Authorization policies</span>
+│   ├── <span class="file-php">KategoriPolicy.php</span>
+│   ├── <span class="file-php">LaporanPolicy.php</span>
+│   └── <span class="file-php">TanggapanPolicy.php</span>
+└── <span class="dir">View/Components/</span>
+    ├── <span class="file-php">AppLayout.php</span>
+    └── <span class="file-php">GuestLayout.php</span></pre>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Resources & Database</div>
+        <pre class="tree"><span class="dir">resources/views/</span>
+├── <span class="dir">Admin/</span>
+│   ├── <span class="file-blade">dashboard.blade.php</span>
+│   ├── <span class="dir">Kategori/</span>       <span class="cm">← create, edit, index</span>
+│   ├── <span class="dir">Laporan/</span>        <span class="cm">← tanggapi</span>
+│   └── <span class="dir">Tanggapan/</span>      <span class="cm">← index</span>
+├── <span class="dir">Siswa/</span>
+│   ├── <span class="file-blade">dashboard.blade.php</span>
+│   └── <span class="dir">Laporan/</span>        <span class="cm">← create, edit, index</span>
+├── <span class="dir">auth/</span>             <span class="cm">← login, register, dll</span>
+├── <span class="dir">layouts/</span>          <span class="cm">← app, guest, navigation</span>
+└── <span class="dir">components/</span>       <span class="cm">← reusable blade components</span>
+
+<span class="dir">database/</span>
+├── <span class="dir">migrations/</span>
+│   ├── <span class="file-php">..._create_users_table.php</span>
+│   ├── <span class="file-php">..._create_kategoris_table.php</span>
+│   ├── <span class="file-php">..._create_laporans_table.php</span>
+│   └── <span class="file-php">..._create_tanggapans_table.php</span>
+├── <span class="dir">factories/</span>        <span class="cm">← KategoriFactory, LaporanFactory, dll</span>
+└── <span class="dir">seeders/</span>          <span class="cm">← DatabaseSeeder, KategoriSeeder, dll</span></pre>
+      </div>
+    </div>
+
+    <!-- DATABASE -->
+    <div class="section" id="section-database">
+      <div class="page-header">
+        <h2>Database & Migrasi</h2>
+        <p>Skema tabel database yang digunakan dalam aplikasi.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tabel <code>users</code> <span class="tag tag-migration">Migration</span></div>
+        <pre><span class="fn">Schema</span>::<span class="fn">create</span>(<span class="str">'users'</span>, <span class="kw">function</span> (<span class="cls">Blueprint</span> <span class="var">$table</span>) {
+    <span class="var">$table</span>-><span class="fn">id</span>();
+    <span class="var">$table</span>-><span class="fn">string</span>(<span class="str">'name'</span>);
+    <span class="var">$table</span>-><span class="fn">string</span>(<span class="str">'email'</span>)-><span class="fn">unique</span>();
+    <span class="var">$table</span>-><span class="fn">string</span>(<span class="str">'password'</span>);
+    <span class="var">$table</span>-><span class="fn">enum</span>(<span class="str">'role'</span>, [<span class="str">'admin'</span>, <span class="str">'siswa'</span>])-><span class="fn">default</span>(<span class="str">'siswa'</span>);
+    <span class="var">$table</span>-><span class="fn">timestamps</span>();
+});</pre>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tabel <code>kategoris</code> <span class="tag tag-migration">Migration</span></div>
+        <pre><span class="fn">Schema</span>::<span class="fn">create</span>(<span class="str">'kategoris'</span>, <span class="kw">function</span> (<span class="cls">Blueprint</span> <span class="var">$table</span>) {
+    <span class="var">$table</span>-><span class="fn">id</span>();
+    <span class="var">$table</span>-><span class="fn">string</span>(<span class="str">'nama'</span>);
+    <span class="var">$table</span>-><span class="fn">text</span>(<span class="str">'deskripsi'</span>)-><span class="fn">nullable</span>();
+    <span class="var">$table</span>-><span class="fn">timestamps</span>();
+});</pre>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tabel <code>laporans</code> <span class="tag tag-migration">Migration</span></div>
+        <div class="note warn">
+          <span class="note-icon">⚠</span>
+          <span>File ini sebelumnya bermasalah karena duplikat kolom <code>status</code>. Gunakan versi yang sudah diperbaiki di bawah.</span>
+        </div>
+        <pre><span class="fn">Schema</span>::<span class="fn">create</span>(<span class="str">'laporans'</span>, <span class="kw">function</span> (<span class="cls">Blueprint</span> <span class="var">$table</span>) {
+    <span class="var">$table</span>-><span class="fn">id</span>();
+    <span class="var">$table</span>-><span class="fn">foreignId</span>(<span class="str">'user_id'</span>)-><span class="fn">constrained</span>()-><span class="fn">cascadeOnDelete</span>();
+    <span class="var">$table</span>-><span class="fn">foreignId</span>(<span class="str">'kategori_id'</span>)-><span class="fn">constrained</span>()-><span class="fn">cascadeOnDelete</span>();
+    <span class="var">$table</span>-><span class="fn">foreignId</span>(<span class="str">'admin_id'</span>)-><span class="fn">nullable</span>()-><span class="fn">constrained</span>(<span class="str">'users'</span>);
+    <span class="var">$table</span>-><span class="fn">string</span>(<span class="str">'lokasi'</span>);
+    <span class="var">$table</span>-><span class="fn">text</span>(<span class="str">'deskripsi'</span>);
+    <span class="var">$table</span>-><span class="fn">string</span>(<span class="str">'foto'</span>)-><span class="fn">nullable</span>();
+
+    <span class="cm">// ✅ Gunakan HANYA enum ini (hapus yang string)</span>
+    <span class="var">$table</span>-><span class="fn">enum</span>(<span class="str">'status'</span>, [<span class="str">'pending'</span>, <span class="str">'diproses'</span>, <span class="str">'selesai'</span>, <span class="str">'ditolak'</span>])
+           -><span class="fn">default</span>(<span class="str">'pending'</span>);
+
+    <span class="var">$table</span>-><span class="fn">text</span>(<span class="str">'admin_feedback'</span>)-><span class="fn">nullable</span>();
+    <span class="var">$table</span>-><span class="fn">timestamp</span>(<span class="str">'diterima_pada'</span>)-><span class="fn">nullable</span>();
+    <span class="var">$table</span>-><span class="fn">timestamp</span>(<span class="str">'ditanggapi_pada'</span>)-><span class="fn">nullable</span>();
+    <span class="var">$table</span>-><span class="fn">timestamp</span>(<span class="str">'selesai_pada'</span>)-><span class="fn">nullable</span>();
+    <span class="var">$table</span>-><span class="fn">timestamps</span>();
+});</pre>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Tabel <code>tanggapans</code> <span class="tag tag-migration">Migration</span></div>
+        <pre><span class="fn">Schema</span>::<span class="fn">create</span>(<span class="str">'tanggapans'</span>, <span class="kw">function</span> (<span class="cls">Blueprint</span> <span class="var">$table</span>) {
+    <span class="var">$table</span>-><span class="fn">id</span>();
+    <span class="var">$table</span>-><span class="fn">foreignId</span>(<span class="str">'laporan_id'</span>)-><span class="fn">constrained</span>()-><span class="fn">cascadeOnDelete</span>();
+    <span class="var">$table</span>-><span class="fn">foreignId</span>(<span class="str">'user_id'</span>)-><span class="fn">constrained</span>()-><span class="fn">cascadeOnDelete</span>();
+    <span class="var">$table</span>-><span class="fn">text</span>(<span class="str">'isi'</span>);
+    <span class="var">$table</span>-><span class="fn">timestamps</span>();
+});</pre>
+        <div class="note">
+          <span class="note-icon">ℹ</span>
+          <span>Tabel ini menyimpan komentar/tanggapan yang bisa diisi oleh admin maupun siswa pada suatu laporan.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Relasi Antar Tabel</div>
+        <table class="method-table">
+          <thead>
+            <tr><th>Tabel</th><th>Relasi</th><th>Ke Tabel</th><th>Keterangan</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>laporans</code></td><td>belongsTo</td><td><code>users</code></td><td>Pembuat laporan</td></tr>
+            <tr><td><code>laporans</code></td><td>belongsTo</td><td><code>kategoris</code></td><td>Kategori laporan</td></tr>
+            <tr><td><code>laporans</code></td><td>belongsTo</td><td><code>users (admin)</code></td><td>Admin yang menangani</td></tr>
+            <tr><td><code>tanggapans</code></td><td>belongsTo</td><td><code>laporans</code></td><td>Tanggapan untuk laporan</td></tr>
+            <tr><td><code>tanggapans</code></td><td>belongsTo</td><td><code>users</code></td><td>Pemberi tanggapan</td></tr>
+            <tr><td><code>users</code></td><td>hasMany</td><td><code>laporans</code></td><td>Laporan milik user</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LAPORAN CONTROLLER -->
+    <div class="section" id="section-laporan-ctrl">
+      <div class="page-header">
+        <h2>LaporanController</h2>
+        <p>Controller utama untuk mengelola data laporan. Digunakan oleh Admin dan Siswa.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Info File <span class="tag tag-controller">Controller</span></div>
+        <ul class="list">
+          <li><span>Namespace:</span> <code>App\Http\Controllers</code></li>
+          <li><span>Path:</span> <code>app/Http/Controllers/LaporanController.php</code></li>
+          <li><span>Akses:</span> Admin (semua) + Siswa (laporan sendiri)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Daftar Method</div>
+        <table class="method-table">
+          <thead><tr><th>Method</th><th>HTTP</th><th>Route</th><th>Akses</th><th>Fungsi</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>index()</code></td>
+              <td><span class="http-badge http-get">GET</span></td>
+              <td class="route-path">/laporan</td>
+              <td><span class="role-badge role-siswa">Siswa</span></td>
+              <td>Tampilkan daftar laporan milik siswa yang login</td>
+            </tr>
+            <tr>
+              <td><code>create()</code></td>
+              <td><span class="http-badge http-get">GET</span></td>
+              <td class="route-path">/laporan/create</td>
+              <td><span class="role-badge role-siswa">Siswa</span></td>
+              <td>Tampilkan form buat laporan baru</td>
+            </tr>
+            <tr>
+              <td><code>store()</code></td>
+              <td><span class="http-badge http-post">POST</span></td>
+              <td class="route-path">/laporan</td>
+              <td><span class="role-badge role-siswa">Siswa</span></td>
+              <td>Simpan laporan baru + upload foto</td>
+            </tr>
+            <tr>
+              <td><code>edit()</code></td>
+              <td><span class="http-badge http-get">GET</span></td>
+              <td class="route-path">/laporan/{id}/edit</td>
+              <td><span class="role-badge role-siswa">Siswa</span></td>
+              <td>Tampilkan form edit laporan</td>
+            </tr>
+            <tr>
+              <td><code>update()</code></td>
+              <td><span class="http-badge http-put">PUT</span></td>
+              <td class="route-path">/laporan/{id}</td>
+              <td><span class="role-badge role-siswa">Siswa</span></td>
+              <td>Update data laporan yang sudah ada</td>
+            </tr>
+            <tr>
+              <td><code>destroy()</code></td>
+              <td><span class="http-badge http-delete">DELETE</span></td>
+              <td class="route-path">/laporan/{id}</td>
+              <td><span class="role-badge role-siswa">Siswa</span></td>
+              <td>Hapus laporan</td>
+            </tr>
+            <tr>
+              <td><code>feedback()</code></td>
+              <td><span class="http-badge http-post">POST</span></td>
+              <td class="route-path">/admin/laporan/{id}/feedback</td>
+              <td><span class="role-badge role-admin">Admin</span></td>
+              <td>Berikan feedback & update status laporan</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Method: <code>feedback()</code> — Tanggapan Admin</div>
+        <p>Method ini digunakan admin untuk memberikan tanggapan dan mengubah status laporan.</p>
+        <pre><span class="kw">public function</span> <span class="fn">feedback</span>(<span class="cls">Request</span> <span class="var">$request</span>, <span class="var">$id</span>)
+{
+    <span class="cm">// 1. Cari laporan, auto 404 jika tidak ada</span>
+    <span class="var">$laporan</span> = <span class="cls">Laporan</span>::<span class="fn">findOrFail</span>(<span class="var">$id</span>);
+
+    <span class="cm">// 2. Update status dan feedback dari form</span>
+    <span class="var">$laporan</span>-><span class="prop">status</span> = <span class="var">$request</span>-><span class="prop">status</span>;
+    <span class="var">$laporan</span>-><span class="prop">admin_feedback</span> = <span class="var">$request</span>-><span class="prop">admin_feedback</span>;
+
+    <span class="cm">// 3. Jika ditolak tapi feedback kosong → isi default</span>
+    <span class="kw">if</span> (<span class="var">$request</span>-><span class="prop">status</span> == <span class="str">'ditolak'</span> && !<span class="var">$request</span>-><span class="prop">admin_feedback</span>) {
+        <span class="var">$laporan</span>-><span class="prop">admin_feedback</span> = <span class="str">'Laporan ditolak'</span>;
+    }
+
+    <span class="cm">// 4. Simpan ke database</span>
+    <span class="var">$laporan</span>-><span class="fn">save</span>();
+
+    <span class="kw">return</span> <span class="fn">back</span>()-><span class="fn">with</span>(<span class="str">'success'</span>, <span class="str">'Tanggapan berhasil dikirim'</span>);
+}</pre>
+        <h4>Logika Status</h4>
+        <table class="method-table">
+          <thead><tr><th>Status</th><th>Feedback Diisi?</th><th>Hasil</th></tr></thead>
+          <tbody>
+            <tr><td><code>pending / diproses / selesai</code></td><td>Apa saja</td><td>Simpan apa adanya</td></tr>
+            <tr><td><code>ditolak</code></td><td>✅ Ya</td><td>Simpan feedback dari admin</td></tr>
+            <tr><td><code>ditolak</code></td><td>❌ Kosong</td><td>Auto-isi: <code>"Laporan ditolak"</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- KATEGORI CONTROLLER -->
+    <div class="section" id="section-kategori-ctrl">
+      <div class="page-header">
+        <h2>KategoriController</h2>
+        <p>Controller untuk mengelola data kategori laporan. Hanya bisa diakses oleh Admin.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Info File <span class="tag tag-controller">Controller</span></div>
+        <ul class="list">
+          <li><span>Path:</span> <code>app/Http/Controllers/KategoriController.php</code></li>
+          <li><span>Akses:</span> Admin only</li>
+          <li><span>Resource:</span> Full CRUD (index, create, store, edit, update, destroy)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Daftar Method</div>
+        <table class="method-table">
+          <thead><tr><th>Method</th><th>HTTP</th><th>Route</th><th>Fungsi</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>index()</code></td>
+              <td><span class="http-badge http-get">GET</span></td>
+              <td class="route-path">/admin/kategori</td>
+              <td>List semua kategori</td>
+            </tr>
+            <tr>
+              <td><code>create()</code></td>
+              <td><span class="http-badge http-get">GET</span></td>
+              <td class="route-path">/admin/kategori/create</td>
+              <td>Form tambah kategori baru</td>
+            </tr>
+            <tr>
+              <td><code>store()</code></td>
+              <td><span class="http-badge http-post">POST</span></td>
+              <td class="route-path">/admin/kategori</td>
+              <td>Simpan kategori baru ke database</td>
+            </tr>
+            <tr>
+              <td><code>edit()</code></td>
+              <td><span class="http-badge http-get">GET</span></td>
+              <td class="route-path">/admin/kategori/{id}/edit</td>
+              <td>Form edit kategori</td>
+            </tr>
+            <tr>
+              <td><code>update()</code></td>
+              <td><span class="http-badge http-put">PUT</span></td>
+              <td class="route-path">/admin/kategori/{id}</td>
+              <td>Update data kategori</td>
+            </tr>
+            <tr>
+              <td><code>destroy()</code></td>
+              <td><span class="http-badge http-delete">DELETE</span></td>
+              <td class="route-path">/admin/kategori/{id}</td>
+              <td>Hapus kategori</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TANGGAPAN CONTROLLER -->
+    <div class="section" id="section-tanggapan-ctrl">
+      <div class="page-header">
+        <h2>TanggapanController</h2>
+        <p>Controller untuk mengelola komentar/tanggapan pada laporan.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Info File <span class="tag tag-controller">Controller</span></div>
+        <ul class="list">
+          <li><span>Path:</span> <code>app/Http/Controllers/TanggapanController.php</code></li>
+          <li><span>Akses:</span> Admin & Siswa (sesuai policy)</li>
+          <li><span>Terhubung dengan:</span> Model <code>Tanggapan</code>, <code>Laporan</code></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Daftar Method</div>
+        <table class="method-table">
+          <thead><tr><th>Method</th><th>HTTP</th><th>Fungsi</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>index()</code></td>
+              <td><span class="http-badge http-get">GET</span></td>
+              <td>List semua tanggapan (Admin)</td>
+            </tr>
+            <tr>
+              <td><code>store()</code></td>
+              <td><span class="http-badge http-post">POST</span></td>
+              <td>Simpan tanggapan baru pada laporan tertentu</td>
+            </tr>
+            <tr>
+              <td><code>update()</code></td>
+              <td><span class="http-badge http-put">PUT</span></td>
+              <td>Update isi tanggapan</td>
+            </tr>
+            <tr>
+              <td><code>destroy()</code></td>
+              <td><span class="http-badge http-delete">DELETE</span></td>
+              <td>Hapus tanggapan</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PROFILE CONTROLLER -->
+    <div class="section" id="section-profile-ctrl">
+      <div class="page-header">
+        <h2>ProfileController</h2>
+        <p>Controller untuk mengelola profil user yang sedang login.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Info File <span class="tag tag-controller">Controller</span></div>
+        <ul class="list">
+          <li><span>Path:</span> <code>app/Http/Controllers/ProfileController.php</code></li>
+          <li><span>Akses:</span> Semua user yang sudah login</li>
+          <li><span>Form Request:</span> <code>ProfileUpdateRequest</code></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Daftar Method</div>
+        <table class="method-table">
+          <thead><tr><th>Method</th><th>HTTP</th><th>Route</th><th>Fungsi</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>edit()</code></td>
+              <td><span class="http-badge http-get">GET</span></td>
+              <td class="route-path">/profile</td>
+              <td>Tampilkan halaman edit profil</td>
+            </tr>
+            <tr>
+              <td><code>update()</code></td>
+              <td><span class="http-badge http-put">PUT</span></td>
+              <td class="route-path">/profile</td>
+              <td>Update nama & email. Reset email_verified_at jika email berubah</td>
+            </tr>
+            <tr>
+              <td><code>destroy()</code></td>
+              <td><span class="http-badge http-delete">DELETE</span></td>
+              <td class="route-path">/profile</td>
+              <td>Hapus akun (konfirmasi password dulu)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AUTH CONTROLLERS -->
+    <div class="section" id="section-auth-ctrl">
+      <div class="page-header">
+        <h2>Auth Controllers</h2>
+        <p>Controller autentikasi bawaan Laravel Breeze — menangani login, register, reset password, dll.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Daftar Auth Controller</div>
+        <table class="method-table">
+          <thead><tr><th>Controller</th><th>Fungsi</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>AuthenticatedSessionController</code></td>
+              <td>Login (<code>create</code>) & Logout (<code>destroy</code>)</td>
+            </tr>
+            <tr>
+              <td><code>RegisteredUserController</code></td>
+              <td>Registrasi user baru + assign role default</td>
+            </tr>
+            <tr>
+              <td><code>PasswordResetLinkController</code></td>
+              <td>Kirim link reset password via email</td>
+            </tr>
+            <tr>
+              <td><code>NewPasswordController</code></td>
+              <td>Proses reset password baru</td>
+            </tr>
+            <tr>
+              <td><code>PasswordController</code></td>
+              <td>Update password dari halaman profil</td>
+            </tr>
+            <tr>
+              <td><code>EmailVerificationPromptController</code></td>
+              <td>Tampilkan halaman verifikasi email</td>
+            </tr>
+            <tr>
+              <td><code>VerifyEmailController</code></td>
+              <td>Proses verifikasi email dari link</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Alur Login</div>
+        <div class="flow">
+          <div class="flow-step">POST /login</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">Validasi</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">Auth::attempt()</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">Cek Role</div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">Redirect Dashboard</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODELS -->
+    <div class="section" id="section-models">
+      <div class="page-header">
+        <h2>Models</h2>
+        <p>Eloquent models yang merepresentasikan tabel-tabel di database.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><code>Laporan</code> Model <span class="tag tag-model">Model</span></div>
+        <p>Model utama yang merepresentasikan data laporan dari siswa.</p>
+        <pre><span class="kw">class</span> <span class="cls">Laporan</span> <span class="kw">extends</span> <span class="cls">Model</span>
+{
+    <span class="kw">protected</span> <span class="var">$fillable</span> = [
+        <span class="str">'user_id'</span>, <span class="str">'kategori_id'</span>, <span class="str">'admin_id'</span>,
+        <span class="str">'lokasi'</span>, <span class="str">'deskripsi'</span>, <span class="str">'foto'</span>,
+        <span class="str">'status'</span>, <span class="str">'admin_feedback'</span>,
+        <span class="str">'diterima_pada'</span>, <span class="str">'ditanggapi_pada'</span>, <span class="str">'selesai_pada'</span>
+    ];
+
+    <span class="cm">// Relasi ke User (pembuat laporan)</span>
+    <span class="kw">public function</span> <span class="fn">user</span>() {
+        <span class="kw">return</span> <span class="var">$this</span>-><span class="fn">belongsTo</span>(<span class="cls">User</span>::class);
+    }
+
+    <span class="cm">// Relasi ke Kategori</span>
+    <span class="kw">public function</span> <span class="fn">kategori</span>() {
+        <span class="kw">return</span> <span class="var">$this</span>-><span class="fn">belongsTo</span>(<span class="cls">Kategori</span>::class);
+    }
+
+    <span class="cm">// Relasi ke Tanggapan</span>
+    <span class="kw">public function</span> <span class="fn">tanggapans</span>() {
+        <span class="kw">return</span> <span class="var">$this</span>-><span class="fn">hasMany</span>(<span class="cls">Tanggapan</span>::class);
+    }
+}</pre>
+        <h4>Status yang Tersedia</h4>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px">
+          <code>pending</code><code>diproses</code><code>selesai</code><code>ditolak</code>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><code>Kategori</code> Model <span class="tag tag-model">Model</span></div>
+        <pre><span class="kw">class</span> <span class="cls">Kategori</span> <span class="kw">extends</span> <span class="cls">Model</span>
+{
+    <span class="kw">protected</span> <span class="var">$fillable</span> = [<span class="str">'nama'</span>, <span class="str">'deskripsi'</span>];
+
+    <span class="kw">public function</span> <span class="fn">laporans</span>() {
+        <span class="kw">return</span> <span class="var">$this</span>-><span class="fn">hasMany</span>(<span class="cls">Laporan</span>::class);
+    }
+}</pre>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><code>User</code> Model <span class="tag tag-model">Model</span></div>
+        <pre><span class="kw">class</span> <span class="cls">User</span> <span class="kw">extends</span> <span class="cls">Authenticatable</span>
+{
+    <span class="kw">protected</span> <span class="var">$fillable</span> = [<span class="str">'name'</span>, <span class="str">'email'</span>, <span class="str">'password'</span>, <span class="str">'role'</span>];
+
+    <span class="kw">protected</span> <span class="var">$hidden</span> = [<span class="str">'password'</span>, <span class="str">'remember_token'</span>];
+
+    <span class="kw">public function</span> <span class="fn">laporans</span>() {
+        <span class="kw">return</span> <span class="var">$this</span>-><span class="fn">hasMany</span>(<span class="cls">Laporan</span>::class);
+    }
+
+    <span class="cm">// Cek apakah user adalah admin</span>
+    <span class="kw">public function</span> <span class="fn">isAdmin</span>(): <span class="cls">bool</span> {
+        <span class="kw">return</span> <span class="var">$this</span>-><span class="prop">role</span> === <span class="str">'admin'</span>;
+    }
+}</pre>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><code>Tanggapan</code> Model <span class="tag tag-model">Model</span></div>
+        <pre><span class="kw">class</span> <span class="cls">Tanggapan</span> <span class="kw">extends</span> <span class="cls">Model</span>
+{
+    <span class="kw">protected</span> <span class="var">$fillable</span> = [<span class="str">'laporan_id'</span>, <span class="str">'user_id'</span>, <span class="str">'isi'</span>];
+
+    <span class="kw">public function</span> <span class="fn">laporan</span>() {
+        <span class="kw">return</span> <span class="var">$this</span>-><span class="fn">belongsTo</span>(<span class="cls">Laporan</span>::class);
+    }
+
+    <span class="kw">public function</span> <span class="fn">user</span>() {
+        <span class="kw">return</span> <span class="var">$this</span>-><span class="fn">belongsTo</span>(<span class="cls">User</span>::class);
+    }
+}</pre>
+      </div>
+    </div>
+
+    <!-- MIDDLEWARE -->
+    <div class="section" id="section-middleware">
+      <div class="page-header">
+        <h2>Middleware</h2>
+        <p>Middleware custom yang digunakan untuk authorization berbasis role.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><code>RoleMiddleware</code> <span class="tag tag-middleware">Middleware</span></div>
+        <p>Middleware ini mengecek apakah user yang login memiliki role yang sesuai sebelum mengakses route tertentu.</p>
+        <pre><span class="kw">class</span> <span class="cls">RoleMiddleware</span>
+{
+    <span class="kw">public function</span> <span class="fn">handle</span>(<span class="cls">Request</span> <span class="var">$request</span>, <span class="cls">Closure</span> <span class="var">$next</span>, <span class="cls">string</span> <span class="var">$role</span>)
+    {
+        <span class="kw">if</span> (!<span class="fn">auth</span>()-><span class="fn">check</span>() || <span class="fn">auth</span>()-><span class="fn">user</span>()-><span class="prop">role</span> !== <span class="var">$role</span>) {
+            <span class="kw">return</span> <span class="fn">redirect</span>(<span class="str">'/'</span>)-><span class="fn">with</span>(<span class="str">'error'</span>, <span class="str">'Akses ditolak.'</span>);
+        }
+
+        <span class="kw">return</span> <span class="var">$next</span>(<span class="var">$request</span>);
+    }
+}</pre>
+        <h4>Cara Penggunaan di Route</h4>
+        <pre><span class="cm">// Hanya Admin</span>
+<span class="cls">Route</span>::<span class="fn">middleware</span>([<span class="str">'auth'</span>, <span class="str">'role:admin'</span>])-><span class="fn">group</span>(<span class="kw">function</span>() {
+    <span class="cls">Route</span>::<span class="fn">resource</span>(<span class="str">'kategori'</span>, <span class="cls">KategoriController</span>::class);
+});
+
+<span class="cm">// Hanya Siswa</span>
+<span class="cls">Route</span>::<span class="fn">middleware</span>([<span class="str">'auth'</span>, <span class="str">'role:siswa'</span>])-><span class="fn">group</span>(<span class="kw">function</span>() {
+    <span class="cls">Route</span>::<span class="fn">resource</span>(<span class="str">'laporan'</span>, <span class="cls">LaporanController</span>::class);
+});</pre>
+      </div>
+    </div>
+
+    <!-- FORM REQUESTS -->
+    <div class="section" id="section-requests">
+      <div class="page-header">
+        <h2>Form Requests</h2>
+        <p>Kelas validasi form yang memisahkan logika validasi dari controller.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Daftar Form Request <span class="tag tag-request">Request</span></div>
+        <table class="method-table">
+          <thead><tr><th>Class</th><th>Digunakan di</th><th>Field yang Divalidasi</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>StoreLaporanRequest</code></td>
+              <td><code>LaporanController@store</code></td>
+              <td><code>kategori_id, lokasi, deskripsi, foto</code></td>
+            </tr>
+            <tr>
+              <td><code>UpdateLaporanRequest</code></td>
+              <td><code>LaporanController@update</code></td>
+              <td><code>kategori_id, lokasi, deskripsi, foto</code></td>
+            </tr>
+            <tr>
+              <td><code>StoreKategoriRequest</code></td>
+              <td><code>KategoriController@store</code></td>
+              <td><code>nama, deskripsi</code></td>
+            </tr>
+            <tr>
+              <td><code>UpdateKategoriRequest</code></td>
+              <td><code>KategoriController@update</code></td>
+              <td><code>nama, deskripsi</code></td>
+            </tr>
+            <tr>
+              <td><code>StoreTanggapanRequest</code></td>
+              <td><code>TanggapanController@store</code></td>
+              <td><code>laporan_id, isi</code></td>
+            </tr>
+            <tr>
+              <td><code>UpdateTanggapanRequest</code></td>
+              <td><code>TanggapanController@update</code></td>
+              <td><code>isi</code></td>
+            </tr>
+            <tr>
+              <td><code>ProfileUpdateRequest</code></td>
+              <td><code>ProfileController@update</code></td>
+              <td><code>name, email</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Contoh: <code>StoreLaporanRequest</code></div>
+        <pre><span class="kw">class</span> <span class="cls">StoreLaporanRequest</span> <span class="kw">extends</span> <span class="cls">FormRequest</span>
+{
+    <span class="kw">public function</span> <span class="fn">authorize</span>(): <span class="cls">bool</span>
+    {
+        <span class="kw">return</span> <span class="kw">true</span>; <span class="cm">// Cek di middleware/policy</span>
+    }
+
+    <span class="kw">public function</span> <span class="fn">rules</span>(): <span class="cls">array</span>
+    {
+        <span class="kw">return</span> [
+            <span class="str">'kategori_id'</span> => [<span class="str">'required'</span>, <span class="str">'exists:kategoris,id'</span>],
+            <span class="str">'lokasi'</span>      => [<span class="str">'required'</span>, <span class="str">'string'</span>, <span class="str">'max:255'</span>],
+            <span class="str">'deskripsi'</span>   => [<span class="str">'required'</span>, <span class="str">'string'</span>],
+            <span class="str">'foto'</span>        => [<span class="str">'nullable'</span>, <span class="str">'image'</span>, <span class="str">'max:2048'</span>],
+        ];
+    }
+}</pre>
+      </div>
+    </div>
+
+    <!-- VIEWS -->
+    <div class="section" id="section-views">
+      <div class="page-header">
+        <h2>Views (Blade Templates)</h2>
+        <p>Halaman-halaman tampilan yang dibagi berdasarkan role pengguna.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Views Admin <span class="tag tag-view">Blade</span></div>
+        <table class="method-table">
+          <thead><tr><th>File</th><th>Route</th><th>Fungsi</th></tr></thead>
+          <tbody>
+            <tr><td><code>Admin/dashboard.blade.php</code></td><td class="route-path">/admin/dashboard</td><td>Dashboard utama admin</td></tr>
+            <tr><td><code>Admin/Kategori/index.blade.php</code></td><td class="route-path">/admin/kategori</td><td>Daftar semua kategori</td></tr>
+            <tr><td><code>Admin/Kategori/create.blade.php</code></td><td class="route-path">/admin/kategori/create</td><td>Form tambah kategori</td></tr>
+            <tr><td><code>Admin/Kategori/edit.blade.php</code></td><td class="route-path">/admin/kategori/{id}/edit</td><td>Form edit kategori</td></tr>
+            <tr><td><code>Admin/Laporan/tanggapi.blade.php</code></td><td class="route-path">/admin/laporan/{id}/tanggapi</td><td>Form feedback laporan</td></tr>
+            <tr><td><code>Admin/Tanggapan/index.blade.php</code></td><td class="route-path">/admin/tanggapan</td><td>Daftar semua tanggapan</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Views Siswa <span class="tag tag-view">Blade</span></div>
+        <table class="method-table">
+          <thead><tr><th>File</th><th>Route</th><th>Fungsi</th></tr></thead>
+          <tbody>
+            <tr><td><code>Siswa/dashboard.blade.php</code></td><td class="route-path">/siswa/dashboard</td><td>Dashboard siswa</td></tr>
+            <tr><td><code>Siswa/Laporan/index.blade.php</code></td><td class="route-path">/laporan</td><td>Daftar laporan milik siswa</td></tr>
+            <tr><td><code>Siswa/Laporan/create.blade.php</code></td><td class="route-path">/laporan/create</td><td>Form buat laporan baru</td></tr>
+            <tr><td><code>Siswa/Laporan/edit.blade.php</code></td><td class="route-path">/laporan/{id}/edit</td><td>Form edit laporan</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Layout & Components <span class="tag tag-view">Blade</span></div>
+        <table class="method-table">
+          <thead><tr><th>File</th><th>Fungsi</th></tr></thead>
+          <tbody>
+            <tr><td><code>layouts/app.blade.php</code></td><td>Layout utama untuk user yang sudah login</td></tr>
+            <tr><td><code>layouts/guest.blade.php</code></td><td>Layout untuk halaman login/register</td></tr>
+            <tr><td><code>layouts/navigation.blade.php</code></td><td>Komponen navbar (beda menu untuk admin/siswa)</td></tr>
+            <tr><td><code>components/text-input.blade.php</code></td><td>Input field yang bisa digunakan ulang</td></tr>
+            <tr><td><code>components/primary-button.blade.php</code></td><td>Tombol submit utama</td></tr>
+            <tr><td><code>components/input-error.blade.php</code></td><td>Tampilkan pesan error validasi</td></tr>
+            <tr><td><code>components/modal.blade.php</code></td><td>Komponen modal dialog</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ROUTES -->
+    <div class="section" id="section-routes">
+      <div class="page-header">
+        <h2>Routes</h2>
+        <p>Peta semua URL yang tersedia dalam aplikasi, dikelompokkan berdasarkan akses.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Routes Publik (tanpa login)</div>
+        <table class="method-table">
+          <thead><tr><th>Method</th><th>URL</th><th>Fungsi</th></tr></thead>
+          <tbody>
+            <tr><td><span class="http-badge http-get">GET</span></td><td class="route-path">/</td><td>Halaman welcome</td></tr>
+            <tr><td><span class="http-badge http-get">GET</span></td><td class="route-path">/login</td><td>Form login</td></tr>
+            <tr><td><span class="http-badge http-post">POST</span></td><td class="route-path">/login</td><td>Proses login</td></tr>
+            <tr><td><span class="http-badge http-get">GET</span></td><td class="route-path">/register</td><td>Form register</td></tr>
+            <tr><td><span class="http-badge http-post">POST</span></td><td class="route-path">/register</td><td>Proses register</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Routes Admin <span class="role-badge role-admin">Admin only</span></div>
+        <table class="method-table">
+          <thead><tr><th>Method</th><th>URL</th><th>Controller@Method</th></tr></thead>
+          <tbody>
+            <tr><td><span class="http-badge http-get">GET</span></td><td class="route-path">/admin/dashboard</td><td><code>Admin dashboard</code></td></tr>
+            <tr><td><span class="http-badge http-get">GET</span></td><td class="route-path">/admin/kategori</td><td><code>KategoriController@index</code></td></tr>
+            <tr><td><span class="http-badge http-post">POST</span></td><td class="route-path">/admin/kategori</td><td><code>KategoriController@store</code></td></tr>
+            <tr><td><span class="http-badge http-put">PUT</span></td><td class="route-path">/admin/kategori/{id}</td><td><code>KategoriController@update</code></td></tr>
+            <tr><td><span class="http-badge http-delete">DELETE</span></td><td class="route-path">/admin/kategori/{id}</td><td><code>KategoriController@destroy</code></td></tr>
+            <tr><td><span class="http-badge http-post">POST</span></td><td class="route-path">/admin/laporan/{id}/feedback</td><td><code>LaporanController@feedback</code></td></tr>
+            <tr><td><span class="http-badge http-get">GET</span></td><td class="route-path">/admin/tanggapan</td><td><code>TanggapanController@index</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Routes Siswa <span class="role-badge role-siswa">Siswa only</span></div>
+        <table class="method-table">
+          <thead><tr><th>Method</th><th>URL</th><th>Controller@Method</th></tr></thead>
+          <tbody>
+            <tr><td><span class="http-badge http-get">GET</span></td><td class="route-path">/siswa/dashboard</td><td><code>Siswa dashboard</code></td></tr>
+            <tr><td><span class="http-badge http-get">GET</span></td><td class="route-path">/laporan</td><td><code>LaporanController@index</code></td></tr>
+            <tr><td><span class="http-badge http-get">GET</span></td><td class="route-path">/laporan/create</td><td><code>LaporanController@create</code></td></tr>
+            <tr><td><span class="http-badge http-post">POST</span></td><td class="route-path">/laporan</td><td><code>LaporanController@store</code></td></tr>
+            <tr><td><span class="http-badge http-get">GET</span></td><td class="route-path">/laporan/{id}/edit</td><td><code>LaporanController@edit</code></td></tr>
+            <tr><td><span class="http-badge http-put">PUT</span></td><td class="route-path">/laporan/{id}</td><td><code>LaporanController@update</code></td></tr>
+            <tr><td><span class="http-badge http-delete">DELETE</span></td><td class="route-path">/laporan/{id}</td><td><code>LaporanController@destroy</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Routes User (sudah login, semua role)</div>
+        <table class="method-table">
+          <thead><tr><th>Method</th><th>URL</th><th>Controller@Method</th></tr></thead>
+          <tbody>
+            <tr><td><span class="http-badge http-get">GET</span></td><td class="route-path">/profile</td><td><code>ProfileController@edit</code></td></tr>
+            <tr><td><span class="http-badge http-put">PUT</span></td><td class="route-path">/profile</td><td><code>ProfileController@update</code></td></tr>
+            <tr><td><span class="http-badge http-delete">DELETE</span></td><td class="route-path">/profile</td><td><code>ProfileController@destroy</code></td></tr>
+            <tr><td><span class="http-badge http-post">POST</span></td><td class="route-path">/logout</td><td><code>AuthenticatedSessionController@destroy</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<script>
+  const titles = {
+    'overview': 'Overview Proyek',
+    'struktur': 'Struktur Folder',
+    'database': 'Database & Migrasi',
+    'laporan-ctrl': 'LaporanController',
+    'kategori-ctrl': 'KategoriController',
+    'tanggapan-ctrl': 'TanggapanController',
+    'profile-ctrl': 'ProfileController',
+    'auth-ctrl': 'Auth Controllers',
+    'models': 'Models',
+    'middleware': 'Middleware',
+    'requests': 'Form Requests',
+    'views': 'Views (Blade)',
+    'routes': 'Routes'
+  };
+
+  function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+
+    document.getElementById('section-' + id).classList.add('active');
+    document.getElementById('topbar-title').textContent = titles[id] || id;
+
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+      if (link.getAttribute('onclick') && link.getAttribute('onclick').includes("'" + id + "'")) {
+        link.classList.add('active');
+      }
+    });
+
+    window.scrollTo(0, 0);
+  }
+</script>
+</body>
+</html>
